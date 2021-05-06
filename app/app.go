@@ -110,6 +110,12 @@ func (a *App) delete(path string, f func(w http.ResponseWriter, r *http.Request)
 	a.Router.HandleFunc(path, f).Methods("DELETE")
 }
 
+func (a *App) Authenticate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "task failed succesfully", http.StatusOK)
+	})
+}
+
 func (a *App) handle(path string, f func(w http.ResponseWriter, r *http.Request)) {
 	a.Router.HandleFunc(path, f)
 }
@@ -272,6 +278,7 @@ func (a *App) deleteRole(w http.ResponseWriter, r *http.Request) {
 
 // Run starts the server
 func (a *App) Run(host string) {
+	a.Router.Use(a.Authenticate)
 	fmt.Println("Server running at", host)
 	log.Fatal(http.ListenAndServe(host, a.Router))
 }

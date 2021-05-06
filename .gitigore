@@ -4,3 +4,5 @@ fglhub-backend
 ./fglhub-backend
 
 notes.txt
+
+.env
