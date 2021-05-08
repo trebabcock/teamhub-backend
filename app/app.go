@@ -19,6 +19,7 @@ import (
 
 type App struct {
 	Router *mux.Router
+	API    *mux.Router
 	DB     *gorm.DB
 }
 
@@ -43,53 +44,55 @@ func (a *App) Init(dbConfig *db.Config) {
 	a.DB = model.DBMigrate(db)
 	fmt.Println("Migrated database")
 	a.Router = mux.NewRouter()
+	a.API = a.Router.PathPrefix("/api").Subrouter()
 	a.setv1Routes()
 }
 
 func (a *App) setv1Routes() {
-	a.get("/api/v1/users", a.getAllUsers)
-	a.post("/api/v1/users/register", a.registerUser)
-	a.post("/api/v1/users/login", a.userLogin)
-	a.get("/api/v1/users/{id}", a.getUser)
-	a.put("/api/v1/users/{id}", a.updateUser)
-	a.delete("/api/v1/users/{id}", a.deleteUser)
+	a.get_auth("/api/v1/users", a.getAllUsers)
+	a.get_auth("/api/v1/users/{id}", a.getUser)
+	a.put_auth("/api/v1/users/{id}", a.updateUser)
+	a.delete_auth("/api/v1/users/{id}", a.deleteUser)
 
-	a.get("/api/v1/spaces", a.getAllSpaces)
-	a.get("/api/v1/spaces/{user_id}", a.getAllSpacesFromUser)
-	a.get("/api/v1/spaces/{id}", a.getSpace)
-	a.post("/api/v1/spaces/create", a.createSpace)
-	a.put("/api/v1/spaces/{id}", a.updateSpace)
-	a.delete("/api/v1/spaces/{id}", a.deleteSpace)
-	a.get("/api/v1/spaces/{id}/content/{id}", a.getContent)
-	a.put("/api/v1/spaces/{id}/content/{id}", a.updateContent)
-	a.delete("/api/v1/spaces/{id}/content/{id}", a.deleteContent)
+	a.post("/auth/register", a.registerUser)
+	a.post("/auth/login", a.userLogin)
 
-	a.get("/api/v1/posts", a.getAllPosts)
-	a.get("/api/v1/posts/{id}", a.getPost)
-	a.get("/api/v1/posts/{user_id}", a.getAllPostsFromUser)
-	a.post("/api/v1/posts/create", a.createPost)
-	a.put("/api/v1/posts/{id}", a.updatePost)
-	a.delete("/api/v1/posts/{id}", a.deletePost)
+	a.get_auth("/api/v1/spaces", a.getAllSpaces)
+	a.get_auth("/api/v1/spaces/{user_id}", a.getAllSpacesFromUser)
+	a.get_auth("/api/v1/spaces/{id}", a.getSpace)
+	a.post_auth("/api/v1/spaces/create", a.createSpace)
+	a.put_auth("/api/v1/spaces/{id}", a.updateSpace)
+	a.delete_auth("/api/v1/spaces/{id}", a.deleteSpace)
+	a.get_auth("/api/v1/spaces/{id}/content/{id}", a.getContent)
+	a.put_auth("/api/v1/spaces/{id}/content/{id}", a.updateContent)
+	a.delete_auth("/api/v1/spaces/{id}/content/{id}", a.deleteContent)
 
-	a.get("/api/v1/chat/messages", a.getAllMessages)
-	a.get("/api/v1/chat/messages/{id}", a.getMessage)
-	a.put("/api/v1/chat/messages/{id}", a.updateMessage)
-	a.delete("/api/v1/chat/messages/{id}", a.deleteMessage)
-	a.get("/api/v1/chat/channels", a.getAllChannels)
-	a.post("/api/v1/chat/channels/new", a.createChannel)
-	a.get("/api/v1/chat/channels/{id}", a.getChannel)
-	a.put("/api/v1/chat/channels/{id}", a.updateChannel)
-	a.delete("/api/v1/chat/channels/{id}", a.deleteChannel)
+	a.get_auth("/api/v1/posts", a.getAllPosts)
+	a.get_auth("/api/v1/posts/{id}", a.getPost)
+	a.get_auth("/api/v1/posts/{user_id}", a.getAllPostsFromUser)
+	a.post_auth("/api/v1/posts/create", a.createPost)
+	a.put_auth("/api/v1/posts/{id}", a.updatePost)
+	a.delete_auth("/api/v1/posts/{id}", a.deletePost)
 
-	a.get("/api/v1/settings/{user_id}", a.getUserSettings)
-	a.put("/api/v1/settings/{user_id}", a.updateUserSettings)
-	a.get("/api/v1/settings/default", a.getDefaultSettings)
+	a.get_auth("/api/v1/chat/messages", a.getAllMessages)
+	a.get_auth("/api/v1/chat/messages/{id}", a.getMessage)
+	a.put_auth("/api/v1/chat/messages/{id}", a.updateMessage)
+	a.delete_auth("/api/v1/chat/messages/{id}", a.deleteMessage)
+	a.get_auth("/api/v1/chat/channels", a.getAllChannels)
+	a.post_auth("/api/v1/chat/channels/new", a.createChannel)
+	a.get_auth("/api/v1/chat/channels/{id}", a.getChannel)
+	a.put_auth("/api/v1/chat/channels/{id}", a.updateChannel)
+	a.delete_auth("/api/v1/chat/channels/{id}", a.deleteChannel)
 
-	a.get("/api/v1/roles", a.getAllRoles)
-	a.post("/api/v1/roles/create", a.createRole)
-	a.get("/api/v1/role/{id}", a.getRole)
-	a.put("/api/v1/role/{id}", a.updateRole)
-	a.delete("/api/v1/role/{id}", a.deleteRole)
+	a.get_auth("/api/v1/settings/{user_id}", a.getUserSettings)
+	a.put_auth("/api/v1/settings/{user_id}", a.updateUserSettings)
+	a.get_auth("/api/v1/settings/default", a.getDefaultSettings)
+
+	a.get_auth("/api/v1/roles", a.getAllRoles)
+	a.post_auth("/api/v1/roles/create", a.createRole)
+	a.get_auth("/api/v1/role/{id}", a.getRole)
+	a.put_auth("/api/v1/role/{id}", a.updateRole)
+	a.delete_auth("/api/v1/role/{id}", a.deleteRole)
 
 	a.handle("/api/v1/chat", a.wsHandler)
 }
@@ -98,16 +101,32 @@ func (a *App) get(path string, f func(w http.ResponseWriter, r *http.Request)) {
 	a.Router.HandleFunc(path, f).Methods("GET")
 }
 
+func (a *App) get_auth(path string, f func(w http.ResponseWriter, r *http.Request)) {
+	a.API.HandleFunc(path, f).Methods("GET")
+}
+
 func (a *App) post(path string, f func(w http.ResponseWriter, r *http.Request)) {
 	a.Router.HandleFunc(path, f).Methods("POST")
+}
+
+func (a *App) post_auth(path string, f func(w http.ResponseWriter, r *http.Request)) {
+	a.API.HandleFunc(path, f).Methods("POST")
 }
 
 func (a *App) put(path string, f func(w http.ResponseWriter, r *http.Request)) {
 	a.Router.HandleFunc(path, f).Methods("PUT")
 }
 
+func (a *App) put_auth(path string, f func(w http.ResponseWriter, r *http.Request)) {
+	a.API.HandleFunc(path, f).Methods("PUT")
+}
+
 func (a *App) delete(path string, f func(w http.ResponseWriter, r *http.Request)) {
 	a.Router.HandleFunc(path, f).Methods("DELETE")
+}
+
+func (a *App) delete_auth(path string, f func(w http.ResponseWriter, r *http.Request)) {
+	a.API.HandleFunc(path, f).Methods("DELETE")
 }
 
 func (a *App) Authenticate(next http.Handler) http.Handler {
@@ -278,7 +297,7 @@ func (a *App) deleteRole(w http.ResponseWriter, r *http.Request) {
 
 // Run starts the server
 func (a *App) Run(host string) {
-	a.Router.Use(a.Authenticate)
+	a.API.Use(a.Authenticate)
 	fmt.Println("Server running at", host)
 	log.Fatal(http.ListenAndServe(host, a.Router))
 }

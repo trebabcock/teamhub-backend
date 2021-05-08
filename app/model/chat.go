@@ -18,7 +18,7 @@ type Message struct {
 
 type Channel struct {
 	gorm.Model
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Messages    []uint `json:"messages"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Messages    []Message `gorm:"many2many:channel_message;" json:"messages"`
 }

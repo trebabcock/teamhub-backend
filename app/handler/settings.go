@@ -16,8 +16,10 @@ func UpdateUserSettings(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 }
 
 func GetDefaultSettings(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
-	defaultSettings := &model.Settings{
-		Options: map[string]bool{"dark_mode": false, "notifications": true},
+	defaultSettings := []model.Settings{
+		{Option: "dark_mode", Enabled: false},
+		{Option: "notifications", Enabled: true},
 	}
+
 	RespondJSON(w, http.StatusOK, defaultSettings)
 }
