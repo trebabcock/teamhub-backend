@@ -11,6 +11,12 @@ type User struct {
 	Banned   bool   `json:"banned"`
 }
 
+type PublicUser struct {
+	Name     string
+	Username string
+	Roles    []Role
+}
+
 type Credentials struct {
 	Username string `json:"username"`
 	Password string `json:"password"`

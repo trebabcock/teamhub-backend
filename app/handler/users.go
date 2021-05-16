@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -24,6 +23,31 @@ func GetUser(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 	RespondJSON(w, http.StatusOK, user)
 }
 
+func getUserPrivate(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	user := getUserByID(db, id, w, r)
+	if user == nil {
+		return
+	}
+	RespondJSON(w, http.StatusOK, user)
+}
+
+func getUserPublic(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	user := getUserByID(db, id, w, r)
+	if user == nil {
+		return
+	}
+	public := model.PublicUser{
+		Name:     user.Name,
+		Username: user.Username,
+		Roles:    user.Roles,
+	}
+	RespondJSON(w, http.StatusOK, public)
+}
+
 // GetAllUsers returns all users
 func GetAllUsers(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 	users := []model.User{}
@@ -36,7 +60,8 @@ func UserLogin(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 	credentials := model.Credentials{}
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&credentials); err != nil {
-		fmt.Println("error decoding credentials:", err)
+		RespondError(w, http.StatusUnauthorized, "")
+		return
 	}
 
 	user := getUserByID(db, credentials.Username, w, r)
@@ -45,13 +70,11 @@ func UserLogin(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(credentials.Password)); err != nil {
-		fmt.Println("error", err)
-		RespondError(w, http.StatusUnauthorized, err.Error())
+		RespondError(w, http.StatusUnauthorized, "")
 		return
 	}
 
 	RespondJSON(w, http.StatusOK, user.Username)
-	fmt.Println("user has logged in:", user.Username)
 }
 
 // RegisterUser handles user registration
@@ -59,25 +82,22 @@ func RegisterUser(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 	user := model.User{}
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&user); err != nil {
-		fmt.Println("error decoding user information:", err)
-		RespondError(w, http.StatusBadRequest, err.Error())
+		RespondError(w, http.StatusBadRequest, "")
 		return
 	}
 	defer r.Body.Close()
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 8)
 	if err != nil {
-		fmt.Println("error hashing password:", err)
+		RespondError(w, http.StatusInternalServerError, "")
+		return
 	}
 	user.Password = string(hashedPassword)
 	if err := db.Save(&user).Error; err != nil {
-		fmt.Println("error saving user to database:", err)
-		RespondError(w, http.StatusInternalServerError, err.Error())
+		RespondError(w, http.StatusInternalServerError, "")
 		return
 	}
 	RespondJSON(w, http.StatusCreated, user)
-
-	fmt.Println("Registered new user:", user.Username)
 }
 
 // UpdateUser updates user information for specified user
@@ -92,13 +112,13 @@ func UpdateUser(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&user); err != nil {
-		RespondError(w, http.StatusBadRequest, err.Error())
+		RespondError(w, http.StatusBadRequest, "")
 		return
 	}
 	defer r.Body.Close()
 
 	if err := db.Save(&user).Error; err != nil {
-		RespondError(w, http.StatusInternalServerError, err.Error())
+		RespondError(w, http.StatusInternalServerError, "")
 		return
 	}
 	RespondJSON(w, http.StatusOK, user)
@@ -114,7 +134,7 @@ func DeleteUser(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := db.Delete(&user).Error; err != nil {
-		RespondError(w, http.StatusInternalServerError, err.Error())
+		RespondError(w, http.StatusInternalServerError, "")
 		return
 	}
 	RespondJSON(w, http.StatusNoContent, nil)
@@ -127,7 +147,7 @@ func getUserByID(db *gorm.DB, id string, w http.ResponseWriter, r *http.Request)
 	}
 	user := model.User{}
 	if err := db.First(&user, uid).Error; err != nil {
-		RespondError(w, http.StatusNotFound, err.Error())
+		RespondError(w, http.StatusNotFound, "")
 		return nil
 	}
 	return &user
@@ -136,7 +156,7 @@ func getUserByID(db *gorm.DB, id string, w http.ResponseWriter, r *http.Request)
 func getUserByName(db *gorm.DB, username string, w http.ResponseWriter, r *http.Request) *model.User {
 	user := model.User{}
 	if err := db.First(&user, model.User{Username: username}).Error; err != nil {
-		RespondError(w, http.StatusNotFound, err.Error())
+		RespondError(w, http.StatusNotFound, "")
 		return nil
 	}
 	return &user
