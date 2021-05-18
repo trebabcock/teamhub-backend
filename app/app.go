@@ -2,6 +2,8 @@ package app
 
 import (
 	"fmt"
+	"time"
+
 	//"io"
 	"log"
 	"net/http"
@@ -10,6 +12,7 @@ import (
 	//"strconv"
 
 	handler "fglhub-backend/app/handler"
+	chat "fglhub-backend/app/handler/chat"
 	"fglhub-backend/app/model"
 	db "fglhub-backend/db"
 
@@ -21,6 +24,7 @@ type App struct {
 	Router *mux.Router
 	API    *mux.Router
 	DB     *gorm.DB
+	Hub    *chat.Hub
 }
 
 func (a *App) Init(dbConfig *db.Config) {
@@ -45,6 +49,8 @@ func (a *App) Init(dbConfig *db.Config) {
 	fmt.Println("Migrated database")
 	a.Router = mux.NewRouter()
 	a.API = a.Router.PathPrefix("/api").Subrouter()
+	//a.API.Use(a.Authenticate)
+	a.Hub = chat.NewHub()
 	a.setv1Routes()
 }
 
@@ -74,7 +80,7 @@ func (a *App) setv1Routes() {
 	a.put_auth("/api/v1/posts/{id}", a.updatePost)
 	a.delete_auth("/api/v1/posts/{id}", a.deletePost)
 
-	a.get_auth("/api/v1/chat/messages", a.getAllMessages)
+	a.get("/api/v1/chat/messages", a.getAllMessages)
 	a.get_auth("/api/v1/chat/messages/{id}", a.getMessage)
 	a.put_auth("/api/v1/chat/messages/{id}", a.updateMessage)
 	a.delete_auth("/api/v1/chat/messages/{id}", a.deleteMessage)
@@ -135,12 +141,20 @@ func (a *App) Authenticate(next http.Handler) http.Handler {
 	})
 }
 
+func (a *App) Default(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "default", http.StatusOK)
+		//next.ServeHTTP(w, r)
+	})
+}
+
 func (a *App) handle(path string, f func(w http.ResponseWriter, r *http.Request)) {
+	log.Println("hit handler")
 	a.Router.HandleFunc(path, f)
 }
 
 func (a *App) wsHandler(w http.ResponseWriter, r *http.Request) {
-	handler.WsHandler(a.DB, w, r)
+	chat.WsHandler(a.DB, a.Hub, w, r)
 }
 
 func (a *App) getAllUsers(w http.ResponseWriter, r *http.Request) {
@@ -228,39 +242,39 @@ func (a *App) deletePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) getAllMessages(w http.ResponseWriter, r *http.Request) {
-	handler.GetAllMessages(a.DB, w, r)
+	chat.GetAllMessages(a.DB, w, r)
 }
 
 func (a *App) getMessage(w http.ResponseWriter, r *http.Request) {
-	handler.GetMessage(a.DB, w, r)
+	chat.GetMessage(a.DB, w, r)
 }
 
 func (a *App) updateMessage(w http.ResponseWriter, r *http.Request) {
-	handler.UpdateMessage(a.DB, w, r)
+	chat.UpdateMessage(a.DB, w, r)
 }
 
 func (a *App) deleteMessage(w http.ResponseWriter, r *http.Request) {
-	handler.DeleteMessage(a.DB, w, r)
+	chat.DeleteMessage(a.DB, w, r)
 }
 
 func (a *App) getAllChannels(w http.ResponseWriter, r *http.Request) {
-	handler.GetAllChannels(a.DB, w, r)
+	chat.GetAllChannels(a.DB, w, r)
 }
 
 func (a *App) getChannel(w http.ResponseWriter, r *http.Request) {
-	handler.GetChannel(a.DB, w, r)
+	chat.GetChannel(a.DB, w, r)
 }
 
 func (a *App) createChannel(w http.ResponseWriter, r *http.Request) {
-	handler.CreateChannel(a.DB, w, r)
+	chat.CreateChannel(a.DB, w, r)
 }
 
 func (a *App) updateChannel(w http.ResponseWriter, r *http.Request) {
-	handler.UpdateChannel(a.DB, w, r)
+	chat.UpdateChannel(a.DB, w, r)
 }
 
 func (a *App) deleteChannel(w http.ResponseWriter, r *http.Request) {
-	handler.DeleteChannel(a.DB, w, r)
+	chat.DeleteChannel(a.DB, w, r)
 }
 
 func (a *App) getUserSettings(w http.ResponseWriter, r *http.Request) {
@@ -297,7 +311,14 @@ func (a *App) deleteRole(w http.ResponseWriter, r *http.Request) {
 
 // Run starts the server
 func (a *App) Run(host string) {
-	a.API.Use(a.Authenticate)
+	go a.Hub.Run()
+	server := &http.Server{
+		Addr:         host,
+		WriteTimeout: time.Second * 15,
+		ReadTimeout:  time.Second * 15,
+		IdleTimeout:  time.Second * 60,
+		Handler:      a.Router,
+	}
 	fmt.Println("Server running at", host)
-	log.Fatal(http.ListenAndServe(host, a.Router))
+	log.Fatal(server.ListenAndServe())
 }
