@@ -1,6 +1,8 @@
 package model
 
-import "github.com/jinzhu/gorm"
+import (
+	"github.com/jinzhu/gorm"
+)
 
 type Packet struct {
 	PacketType        string `json:"type"`
@@ -11,6 +13,8 @@ type Packet struct {
 type Message struct {
 	gorm.Model
 	Author     string `json:"author"`
+	UUID       string `json:"uuid"`
+	Time       string `json:"time"`
 	Desination string `json:"destination"`
 	Type       string `json:"type"`
 	Content    string `json:"content"`
