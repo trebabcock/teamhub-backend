@@ -2,11 +2,11 @@ package chat
 
 import (
 	"encoding/json"
-	handler "fglhub-backend/app/handler"
-	model "fglhub-backend/app/model"
 	"log"
 	"net/http"
 	"strconv"
+	handler "teamhub-backend/app/handler"
+	model "teamhub-backend/app/model"
 
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"

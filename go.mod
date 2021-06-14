@@ -1,4 +1,4 @@
-module fglhub-backend
+module teamhub-backend
 
 go 1.16
 

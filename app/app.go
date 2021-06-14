@@ -4,17 +4,13 @@ import (
 	"fmt"
 	"time"
 
-	//"io"
 	"log"
 	"net/http"
 
-	//"os"
-	//"strconv"
-
-	handler "fglhub-backend/app/handler"
-	chat "fglhub-backend/app/handler/chat"
-	"fglhub-backend/app/model"
-	db "fglhub-backend/db"
+	handler "teamhub-backend/app/handler"
+	chat "teamhub-backend/app/handler/chat"
+	"teamhub-backend/app/model"
+	db "teamhub-backend/db"
 
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
@@ -61,8 +57,8 @@ func (a *App) setv1Routes() {
 	a.put("/api/v1/users/{id}", a.updateUser)
 	a.delete("/api/v1/users/{id}", a.deleteUser)
 
-	a.post("/auth/register", a.registerUser)
-	a.post("/auth/login", a.userLogin)
+	a.post("/api/auth/register", a.registerUser)
+	a.post("/api/auth/login", a.userLogin)
 
 	a.get("/api/v1/spaces", a.getAllSpaces)
 	a.get("/api/v1/spaces/{user_id}", a.getAllSpacesFromUser)
@@ -128,8 +124,9 @@ func (a *App) Authenticate(next http.Handler) http.Handler {
 
 func (a *App) Default(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
 		next.ServeHTTP(w, r)
 	})
 }

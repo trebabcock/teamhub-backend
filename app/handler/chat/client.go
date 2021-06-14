@@ -3,9 +3,9 @@ package chat
 import (
 	"bytes"
 	"encoding/json"
-	model "fglhub-backend/app/model"
 	"log"
 	"net/http"
+	model "teamhub-backend/app/model"
 	"time"
 
 	"github.com/gorilla/websocket"

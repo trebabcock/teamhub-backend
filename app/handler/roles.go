@@ -2,9 +2,9 @@ package handler
 
 import (
 	"encoding/json"
-	"fglhub-backend/app/model"
 	"net/http"
 	"strconv"
+	"teamhub-backend/app/model"
 
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"

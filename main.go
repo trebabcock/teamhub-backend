@@ -1,9 +1,8 @@
 package main
 
-
 import (
-	app "fglhub-backend/app"
-	db "fglhub-backend/db"
+	app "teamhub-backend/app"
+	db "teamhub-backend/db"
 )
 
 func main() {

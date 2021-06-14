@@ -2,10 +2,11 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
-	model "fglhub-backend/app/model"
+	model "teamhub-backend/app/model"
 
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
@@ -57,6 +58,7 @@ func GetAllUsers(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 
 // UserLogin handles user login
 func UserLogin(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
+	fmt.Println("login")
 	credentials := model.Credentials{}
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&credentials); err != nil {
@@ -79,6 +81,7 @@ func UserLogin(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 
 // RegisterUser handles user registration
 func RegisterUser(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
+	fmt.Println("register")
 	user := model.User{}
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&user); err != nil {

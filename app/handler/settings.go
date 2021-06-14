@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"fglhub-backend/app/model"
 	"net/http"
+	"teamhub-backend/app/model"
 
 	"github.com/jinzhu/gorm"
 )
