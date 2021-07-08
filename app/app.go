@@ -10,7 +10,6 @@ import (
 	handler "teamhub-backend/app/handler"
 	chat "teamhub-backend/app/handler/chat"
 	"teamhub-backend/app/model"
-	db "teamhub-backend/db"
 
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
@@ -23,17 +22,10 @@ type App struct {
 	Hub    *chat.Hub
 }
 
-func (a *App) Init(dbConfig *db.Config) {
-	dbURI := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s connect_timeout=15",
-		dbConfig.Host,
-		dbConfig.Port,
-		dbConfig.Username,
-		dbConfig.Name,
-		dbConfig.Password,
-		dbConfig.SSLMode,
-	)
+func (a *App) Init() {
+	dbURI := "postgresql://fgldb:dtoemi9n7itqtnok@app-cb5d8d1a-61fe-40a7-8198-d696e5bb418d-do-user-2759939-0.b.db.ondigitalocean.com:25060/fgldb?sslmode=disable"
 	fmt.Println("Connecting to database...")
-	db, err := gorm.Open(dbConfig.Dialect, dbURI)
+	db, err := gorm.Open("postgres", dbURI)
 	if err != nil {
 		log.Println("Could not connect to database")
 		log.Fatal(err.Error())
