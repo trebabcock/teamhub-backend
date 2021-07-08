@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"log"
@@ -23,7 +24,7 @@ type App struct {
 }
 
 func (a *App) Init() {
-	dbURI := "postgresql://fgldb:dtoemi9n7itqtnok@app-cb5d8d1a-61fe-40a7-8198-d696e5bb418d-do-user-2759939-0.b.db.ondigitalocean.com:25060/fgldb?sslmode=disable"
+	dbURI := os.Getenv("DB_URI")
 	fmt.Println("Connecting to database...")
 	db, err := gorm.Open("postgres", dbURI)
 	if err != nil {
