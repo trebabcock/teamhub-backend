@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -44,7 +45,7 @@ func getUserPublic(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 	public := model.PublicUser{
 		Name:     user.Name,
 		Username: user.Username,
-		Roles:    user.Roles,
+		//Roles:    user.Roles,
 	}
 	RespondJSON(w, http.StatusOK, public)
 }
@@ -66,7 +67,7 @@ func UserLogin(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := getUserByID(db, credentials.Username, w, r)
+	user := getUserByName(db, credentials.Username, w, r)
 	if user == nil {
 		return
 	}
@@ -76,28 +77,39 @@ func UserLogin(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	RespondJSON(w, http.StatusOK, user.Username)
+	RespondJSON(w, http.StatusOK, user)
 }
 
 // RegisterUser handles user registration
 func RegisterUser(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 	fmt.Println("register")
-	user := model.User{}
+	ruser := model.RUser{}
 	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&user); err != nil {
+	if err := decoder.Decode(&ruser); err != nil {
 		RespondError(w, http.StatusBadRequest, "")
+		log.Println("decode:", err.Error())
 		return
 	}
 	defer r.Body.Close()
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 8)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(ruser.Password), 8)
 	if err != nil {
 		RespondError(w, http.StatusInternalServerError, "")
+		log.Println("hash:", err.Error())
 		return
 	}
-	user.Password = string(hashedPassword)
+
+	user := model.User{
+		Name:     ruser.Name,
+		Username: ruser.Username,
+		Password: string(hashedPassword),
+		//Roles:    []model.Role{},
+		Banned: false,
+	}
+
 	if err := db.Save(&user).Error; err != nil {
 		RespondError(w, http.StatusInternalServerError, "")
+		log.Println("save:", err.Error())
 		return
 	}
 	RespondJSON(w, http.StatusCreated, user)

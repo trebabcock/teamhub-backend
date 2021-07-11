@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"log"
@@ -10,8 +9,10 @@ import (
 
 	handler "teamhub-backend/app/handler"
 	chat "teamhub-backend/app/handler/chat"
-	"teamhub-backend/app/model"
 
+	db "teamhub-backend/db"
+
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
 )
@@ -24,18 +25,7 @@ type App struct {
 }
 
 func (a *App) Init() {
-	dbURI := os.Getenv("DB_URI")
-	fmt.Println("Connecting to database...")
-	db, err := gorm.Open("postgres", dbURI)
-	if err != nil {
-		log.Println("Could not connect to database")
-		log.Fatal(err.Error())
-	}
-
-	fmt.Println("Connected to database")
-	fmt.Println("Migrating database...")
-	a.DB = model.DBMigrate(db)
-	fmt.Println("Migrated database")
+	a.DB = db.Init()
 	a.Router = mux.NewRouter()
 	a.Router.Use(a.Default)
 	a.API = a.Router.PathPrefix("/api").Subrouter()
@@ -50,8 +40,8 @@ func (a *App) setv1Routes() {
 	a.put("/api/v1/users/{id}", a.updateUser)
 	a.delete("/api/v1/users/{id}", a.deleteUser)
 
-	a.post("/api/auth/register", a.registerUser)
-	a.post("/api/auth/login", a.userLogin)
+	a.post("/api/v1/auth/register", a.registerUser)
+	a.post("/api/v1/auth/login", a.userLogin)
 
 	a.get("/api/v1/spaces", a.getAllSpaces)
 	a.get("/api/v1/spaces/{user_id}", a.getAllSpacesFromUser)
@@ -117,9 +107,6 @@ func (a *App) Authenticate(next http.Handler) http.Handler {
 
 func (a *App) Default(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
 		next.ServeHTTP(w, r)
 	})
 }
@@ -291,12 +278,17 @@ func (a *App) deleteRole(w http.ResponseWriter, r *http.Request) {
 // Run starts the server
 func (a *App) Run(host string) {
 	go a.Hub.Run()
+
+	headers := handlers.AllowedHeaders([]string{"Accept", "Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization", "Origin", "Cache-Control", "X-Requested-With"})
+	methods := handlers.AllowedMethods([]string{"GET", "PUT", "POST", "DELETE", "OPTIONS"})
+	origins := handlers.AllowedOrigins([]string{"*"})
+
 	server := &http.Server{
 		Addr:         host,
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,
 		IdleTimeout:  time.Second * 60,
-		Handler:      a.Router,
+		Handler:      handlers.CORS(headers, methods, origins)(a.Router),
 	}
 	fmt.Println("Server running at", host)
 	log.Fatal(server.ListenAndServe())

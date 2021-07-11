@@ -22,6 +22,7 @@ type Message struct {
 
 type Channel struct {
 	gorm.Model
-	Name        string `json:"name"`
+	Name        string `gorm:"unique" json:"name"`
 	Description string `json:"description"`
+	UUID        string `json:"id"`
 }

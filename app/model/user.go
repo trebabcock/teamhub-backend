@@ -7,8 +7,14 @@ type User struct {
 	Name     string `json:"name"`
 	Username string `gorm:"unique" json:"username"`
 	Password string `json:"password"`
-	Roles    []Role `gorm:"many2many:user_roles;" json:"roles"`
-	Banned   bool   `json:"banned"`
+	//Roles    []Role `gorm:"many2many:user_roles;" json:"roles"`
+	Banned bool `json:"banned"`
+}
+
+type RUser struct {
+	Name     string `json:"name"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 type PublicUser struct {

@@ -97,6 +97,7 @@ func GetChannel(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateChannel(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
+	log.Println("Create Channel")
 	channel := model.Channel{}
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&channel); err != nil {
@@ -177,12 +178,8 @@ func getMessageByID(db *gorm.DB, id string, w http.ResponseWriter, r *http.Reque
 }
 
 func getChannelByID(db *gorm.DB, id string, w http.ResponseWriter, r *http.Request) *model.Channel {
-	cid, err := strconv.Atoi(id)
-	if err != nil {
-		return nil
-	}
 	channel := model.Channel{}
-	if err := db.First(&channel, cid).Error; err != nil {
+	if err := db.First(&channel, &model.Channel{UUID: id}).Error; err != nil {
 		handler.RespondError(w, http.StatusNotFound, err.Error())
 		return nil
 	}

@@ -37,13 +37,22 @@ func GetAllPostsFromUser(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 }
 
 func CreatePost(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
-	post := model.Post{}
+	npost := model.NPost{}
 	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&post); err != nil {
+	if err := decoder.Decode(&npost); err != nil {
 		RespondError(w, http.StatusBadRequest, "")
 		return
 	}
 	defer r.Body.Close()
+
+	post := model.Post{
+		Author:   npost.Author,
+		Type:     npost.Type,
+		Time:     npost.Time,
+		Content:  npost.Content,
+		UUID:     npost.UUID,
+		Comments: []model.Comment{},
+	}
 
 	if err := db.Save(&post).Error; err != nil {
 		RespondError(w, http.StatusInternalServerError, "")
@@ -104,14 +113,14 @@ func getPostByID(db *gorm.DB, id string, w http.ResponseWriter, r *http.Request)
 }
 
 func getPostsFromUser(db *gorm.DB, id string, w http.ResponseWriter, r *http.Request) *[]model.Post {
-	uid, err := strconv.Atoi(id)
+	/*uid, err := strconv.Atoi(id)
 	if err != nil {
 		return nil
-	}
+	}*/
 	posts := []model.Post{}
-	if err := db.Find(&posts, model.Post{Author: uint(uid)}).Error; err != nil {
+	/*if err := db.Find(&posts, model.Post{}).Error; err != nil {
 		RespondError(w, http.StatusNotFound, "")
 		return nil
-	}
+	}*/
 	return &posts
 }
