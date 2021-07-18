@@ -155,7 +155,10 @@ func WsHandler(db *gorm.DB, hub *Hub, w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
+
+	id := r.URL.Query().Get("id")
+
+	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256), id: id}
 	client.hub.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in

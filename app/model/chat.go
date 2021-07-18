@@ -12,12 +12,13 @@ type Packet struct {
 
 type Message struct {
 	gorm.Model
-	Author     string `json:"author"`
-	UUID       string `json:"uuid"`
-	Time       string `json:"time"`
-	Desination string `json:"destination"`
-	Type       string `json:"type"`
-	Content    string `json:"content"`
+	AuthorID     string `json:"author_id"`
+	UUID         string `json:"uuid"`
+	Time         string `json:"time"`
+	DesinationID string `json:"destination_id"`
+	Private      bool   `json:"private"`
+	Type         string `json:"type"`
+	Content      string `json:"content"`
 }
 
 type Channel struct {

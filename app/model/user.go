@@ -7,8 +7,7 @@ type User struct {
 	Name     string `json:"name"`
 	Username string `gorm:"unique" json:"username"`
 	Password string `json:"password"`
-	//Roles    []Role `gorm:"many2many:user_roles;" json:"roles"`
-	Banned bool `json:"banned"`
+	UUID     string `json:"id"`
 }
 
 type RUser struct {
@@ -18,9 +17,16 @@ type RUser struct {
 }
 
 type PublicUser struct {
-	Name     string
-	Username string
-	Roles    []Role
+	Name     string `json:"name"`
+	Username string `json:"username"`
+	UUID     string `json:"uuid"`
+}
+
+type LoginResponse struct {
+	Name     string `json:"name"`
+	Username string `json:"username"`
+	UUID     string `json:"id"`
+	Token    string `json:"token"`
 }
 
 type Credentials struct {

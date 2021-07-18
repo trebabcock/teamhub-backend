@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 	"teamhub-backend/app/model"
@@ -53,6 +54,8 @@ func CreatePost(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 		UUID:     npost.UUID,
 		Comments: []model.Comment{},
 	}
+
+	log.Println("new post from", post.Author)
 
 	if err := db.Save(&post).Error; err != nil {
 		RespondError(w, http.StatusInternalServerError, "")

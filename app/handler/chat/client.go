@@ -48,6 +48,7 @@ type Client struct {
 
 	// Buffered channel of outbound messages.
 	send chan []byte
+	id   string
 }
 
 // readPump pumps messages from the websocket connection to the hub.
@@ -64,27 +65,37 @@ func (c *Client) readPump(db *gorm.DB) {
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
-		_, message, err := c.conn.ReadMessage()
+		_, messageb, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("error: %v", err)
 			}
 			break
 		}
-		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-		c.hub.broadcast <- message
+		messageb = bytes.TrimSpace(bytes.Replace(messageb, newline, space, -1))
+
+		message := model.Message{}
+
+		if err := json.Unmarshal(messageb, &message); err != nil {
+			log.Println(err)
+			continue
+		}
+
+		if message.Private {
+			for cl := range c.hub.clients {
+				if cl.id == message.DesinationID {
+					cl.send <- messageb
+				}
+			}
+		} else {
+			log.Println("public", message.DesinationID, message.Content)
+			c.hub.broadcast <- messageb
+		}
 		saveMessage(db, message)
 	}
 }
 
-func saveMessage(db *gorm.DB, m []byte) {
-	message := model.Message{}
-
-	if err := json.Unmarshal(m, &message); err != nil {
-		log.Println(err)
-		return
-	}
-
+func saveMessage(db *gorm.DB, message model.Message) {
 	if err := db.Save(&message).Error; err != nil {
 		log.Println(err)
 		return

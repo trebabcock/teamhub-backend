@@ -5,12 +5,16 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	model "teamhub-backend/app/model"
 
+	"github.com/gbrlsnchs/jwt/v3"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
+	_ "github.com/joho/godotenv/autoload"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -45,7 +49,7 @@ func getUserPublic(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 	public := model.PublicUser{
 		Name:     user.Name,
 		Username: user.Username,
-		//Roles:    user.Roles,
+		UUID:     user.UUID,
 	}
 	RespondJSON(w, http.StatusOK, public)
 }
@@ -60,6 +64,10 @@ func GetAllUsers(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 // UserLogin handles user login
 func UserLogin(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 	fmt.Println("login")
+
+	t := r.URL.Query().Get("token")
+	if t
+
 	credentials := model.Credentials{}
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&credentials); err != nil {
@@ -77,7 +85,20 @@ func UserLogin(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	RespondJSON(w, http.StatusOK, user)
+	token, err := generateToken(user.UUID)
+	if err != nil {
+		RespondError(w, http.StatusInternalServerError, "")
+		return
+	}
+
+	lr := model.LoginResponse{
+		Name:     user.Name,
+		Username: user.Username,
+		UUID:     user.UUID,
+		Token:    token,
+	}
+
+	RespondJSON(w, http.StatusOK, lr)
 }
 
 // RegisterUser handles user registration
@@ -99,12 +120,16 @@ func RegisterUser(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	id, err := uuid.NewUUID()
+	if err != nil {
+		RespondError(w, http.StatusInternalServerError, "")
+	}
+
 	user := model.User{
 		Name:     ruser.Name,
 		Username: ruser.Username,
 		Password: string(hashedPassword),
-		//Roles:    []model.Role{},
-		Banned: false,
+		UUID:     id.String(),
 	}
 
 	if err := db.Save(&user).Error; err != nil {
@@ -175,4 +200,41 @@ func getUserByName(db *gorm.DB, username string, w http.ResponseWriter, r *http.
 		return nil
 	}
 	return &user
+}
+
+func generateToken(userID string) (string, error) {
+	secret := os.Getenv("JWT_SECRET")
+	hs := jwt.NewHS256([]byte(secret))
+
+	id, err := uuid.NewUUID()
+	if err != nil {
+		return "", err
+	}
+
+	payload := jwt.Payload{
+		Audience: jwt.Audience{username},
+		JWTID:    id.String(),
+	}
+
+	token, err := jwt.Sign(payload, hs)
+	if err != nil {
+		return "", err
+	}
+
+	return string(token), nil
+}
+
+func verifyToken(token []byte) (bool, error) {
+	secret := os.Getenv("JWT_SECRET")
+	hs := jwt.NewHS256([]byte(secret))
+
+	payload := jwt.Payload{}
+
+	hd, err := jwt.Verify(token, hs, &payload)
+	if err != nil {
+		return false, err
+	}
+	jwt.Header
+	hd.KeyID
+	return true, nil
 }
