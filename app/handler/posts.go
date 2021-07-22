@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strconv"
 	"teamhub-backend/app/model"
 
 	"github.com/gorilla/mux"
@@ -103,12 +102,8 @@ func DeletePost(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 }
 
 func getPostByID(db *gorm.DB, id string, w http.ResponseWriter, r *http.Request) *model.Post {
-	pid, err := strconv.Atoi(id)
-	if err != nil {
-		return nil
-	}
 	post := model.Post{}
-	if err := db.First(&post, pid).Error; err != nil {
+	if err := db.First(&post, model.Post{UUID: id}).Error; err != nil {
 		RespondError(w, http.StatusNotFound, err.Error())
 		return nil
 	}

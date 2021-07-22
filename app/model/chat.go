@@ -25,5 +25,5 @@ type Channel struct {
 	gorm.Model
 	Name        string `gorm:"unique" json:"name"`
 	Description string `json:"description"`
-	UUID        string `json:"id"`
+	UUID        string `json:"uuid"`
 }

@@ -65,8 +65,8 @@ func GetAllUsers(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 func UserLogin(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 	fmt.Println("login")
 
-	t := r.URL.Query().Get("token")
-	if t
+	//t := r.URL.Query().Get("token")
+	//if t
 
 	credentials := model.Credentials{}
 	decoder := json.NewDecoder(r.Body)
@@ -202,39 +202,12 @@ func getUserByName(db *gorm.DB, username string, w http.ResponseWriter, r *http.
 	return &user
 }
 
-func generateToken(userID string) (string, error) {
-	secret := os.Getenv("JWT_SECRET")
-	hs := jwt.NewHS256([]byte(secret))
-
-	id, err := uuid.NewUUID()
+func generateToken(id string) (string, error) {
+	tokenSecret := os.Getenv("JWT_SECRET")
+	token := jwt.NewHS256([]byte(tokenSecret))
+	ret, err := token.Sign([]byte(id))
 	if err != nil {
 		return "", err
 	}
-
-	payload := jwt.Payload{
-		Audience: jwt.Audience{username},
-		JWTID:    id.String(),
-	}
-
-	token, err := jwt.Sign(payload, hs)
-	if err != nil {
-		return "", err
-	}
-
-	return string(token), nil
-}
-
-func verifyToken(token []byte) (bool, error) {
-	secret := os.Getenv("JWT_SECRET")
-	hs := jwt.NewHS256([]byte(secret))
-
-	payload := jwt.Payload{}
-
-	hd, err := jwt.Verify(token, hs, &payload)
-	if err != nil {
-		return false, err
-	}
-	jwt.Header
-	hd.KeyID
-	return true, nil
+	return string(ret), nil
 }

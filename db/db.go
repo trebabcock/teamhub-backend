@@ -12,7 +12,7 @@ import (
 )
 
 func Init() *gorm.DB {
-	dbURI := os.Getenv("DB_URI")
+	dbURI := os.Getenv("DSN")
 	fmt.Println("Connecting to database...")
 	db, err := gorm.Open("postgres", dbURI)
 	if err != nil {
