@@ -26,7 +26,7 @@ type LoginResponse struct {
 	Name     string `json:"name"`
 	Username string `json:"username"`
 	UUID     string `json:"id"`
-	Token    string `json:"token"`
+	Token    []byte `json:"access_token"`
 }
 
 type Credentials struct {

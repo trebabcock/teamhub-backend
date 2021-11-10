@@ -1,7 +1,6 @@
 package db
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"teamhub-backend/app/model"
@@ -13,16 +12,17 @@ import (
 
 func Init() *gorm.DB {
 	dbURI := os.Getenv("DSN")
-	fmt.Println("Connecting to database...")
+	//dbURI := "host=localhost port=5432 dbname=postgres user=postgres password=fglhub sslmode=disable"
+	log.Println("Connecting to database...")
 	db, err := gorm.Open("postgres", dbURI)
 	if err != nil {
 		log.Println("Could not connect to database")
 		log.Fatal(err.Error())
 	}
-	fmt.Println("Connected to database")
-	fmt.Println("Migrating database...")
+	log.Println("Connected to database")
+	log.Println("Migrating database...")
 	mdb := migrate(db)
-	fmt.Println("Database Migrated")
+	log.Println("Database Migrated")
 	return mdb
 }
 

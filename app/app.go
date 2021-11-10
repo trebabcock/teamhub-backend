@@ -1,12 +1,13 @@
 package app
 
 import (
-	"fmt"
+	"strings"
 	"time"
 
 	"log"
 	"net/http"
 
+	"teamhub-backend/app/auth"
 	handler "teamhub-backend/app/handler"
 	chat "teamhub-backend/app/handler/chat"
 
@@ -27,9 +28,8 @@ type App struct {
 func (a *App) Init() {
 	a.DB = db.Init()
 	a.Router = mux.NewRouter()
-	a.Router.Use(a.Default)
 	a.API = a.Router.PathPrefix("/api").Subrouter()
-	//a.API.Use(a.Authenticate)
+	a.API.Use(a.Authenticate)
 	a.Hub = chat.NewHub()
 	a.setv1Routes()
 }
@@ -39,9 +39,11 @@ func (a *App) setv1Routes() {
 	a.get("/api/v1/users/{id}", a.getUser)
 	a.put("/api/v1/users/{id}", a.updateUser)
 	a.delete("/api/v1/users/{id}", a.deleteUser)
+	a.get_noauth("/test", a.test_na)
+	a.get("/test", a.test)
 
-	a.post("/api/v1/auth/register", a.registerUser)
-	a.post("/api/v1/auth/login", a.userLogin)
+	a.post_noauth("/auth/register", a.registerUser)
+	a.post_noauth("/auth/login", a.userLogin)
 
 	a.get("/api/v1/spaces", a.getAllSpaces)
 	a.get("/api/v1/spaces/{user_id}", a.getAllSpacesFromUser)
@@ -81,34 +83,55 @@ func (a *App) setv1Routes() {
 	a.put("/api/v1/role/{id}", a.updateRole)
 	a.delete("/api/v1/role/{id}", a.deleteRole)
 
-	a.handle("/api/v1/chat", a.wsHandler)
+	a.handle("/chat", a.wsHandler)
+}
+
+// Authicate is the authentication middleware
+func (a *App) Authenticate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		bearerString := r.Header.Get("Authorization")
+		log.Println(bearerString)
+		jwtString := strings.Split(bearerString, "Bearer ")[1]
+		ok, _ := auth.VerifyToken([]byte(jwtString))
+		log.Println("auth ", ok)
+		if ok {
+			next.ServeHTTP(w, r)
+		} else {
+			http.Error(w, "invalid token", http.StatusUnauthorized)
+		}
+	})
 }
 
 func (a *App) get(path string, f func(w http.ResponseWriter, r *http.Request)) {
+	a.API.HandleFunc(path, f).Methods("GET")
+}
+
+func (a *App) get_noauth(path string, f func(w http.ResponseWriter, r *http.Request)) {
 	a.Router.HandleFunc(path, f).Methods("GET")
 }
 
 func (a *App) post(path string, f func(w http.ResponseWriter, r *http.Request)) {
+	a.API.HandleFunc(path, f).Methods("POST")
+}
+
+func (a *App) post_noauth(path string, f func(w http.ResponseWriter, r *http.Request)) {
 	a.Router.HandleFunc(path, f).Methods("POST")
 }
+
 func (a *App) put(path string, f func(w http.ResponseWriter, r *http.Request)) {
+	a.API.HandleFunc(path, f).Methods("PUT")
+}
+
+func (a *App) put_noauth(path string, f func(w http.ResponseWriter, r *http.Request)) {
 	a.Router.HandleFunc(path, f).Methods("PUT")
 }
 
 func (a *App) delete(path string, f func(w http.ResponseWriter, r *http.Request)) {
+	a.API.HandleFunc(path, f).Methods("DELETE")
+}
+
+func (a *App) delete_noauth(path string, f func(w http.ResponseWriter, r *http.Request)) {
 	a.Router.HandleFunc(path, f).Methods("DELETE")
-}
-
-func (a *App) Authenticate(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "task failed succesfully", http.StatusOK)
-	})
-}
-
-func (a *App) Default(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		next.ServeHTTP(w, r)
-	})
 }
 
 func (a *App) handle(path string, f func(w http.ResponseWriter, r *http.Request)) {
@@ -117,6 +140,14 @@ func (a *App) handle(path string, f func(w http.ResponseWriter, r *http.Request)
 
 func (a *App) wsHandler(w http.ResponseWriter, r *http.Request) {
 	chat.WsHandler(a.DB, a.Hub, w, r)
+}
+
+func (a *App) test(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("api test successful"))
+}
+
+func (a *App) test_na(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("na test successful"))
 }
 
 func (a *App) getAllUsers(w http.ResponseWriter, r *http.Request) {
@@ -290,6 +321,6 @@ func (a *App) Run(host string) {
 		IdleTimeout:  time.Second * 60,
 		Handler:      handlers.CORS(headers, methods, origins)(a.Router),
 	}
-	fmt.Println("Server running at", host)
+	log.Println("Server running at", host)
 	log.Fatal(server.ListenAndServe())
 }

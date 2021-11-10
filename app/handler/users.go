@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 
+	auth "teamhub-backend/app/auth"
 	model "teamhub-backend/app/model"
 
 	"github.com/gbrlsnchs/jwt/v3"
@@ -85,8 +86,9 @@ func UserLogin(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := generateToken(user.UUID)
+	token, err := auth.GenerateToken(*user)
 	if err != nil {
+		log.Println(err)
 		RespondError(w, http.StatusInternalServerError, "")
 		return
 	}
